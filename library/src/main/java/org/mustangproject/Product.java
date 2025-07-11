@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import org.mustangproject.ZUGFeRD.IDesignatedProductClassification;
 import org.mustangproject.ZUGFeRD.IZUGFeRDExportableProduct;
+import org.mustangproject.ZUGFeRD.model.TaxCategoryCodeTypeConstants;
 import org.mustangproject.util.NodeMap;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -180,6 +180,21 @@ public class Product implements IZUGFeRDExportableProduct {
 	 */
 	public Product setTaxCategoryCode(String code) {
 		taxCategoryCode = code;
+		isIntraCommunitySupply = false;
+		isReverseCharge = false;
+		switch (taxCategoryCode) {
+			case TaxCategoryCodeTypeConstants.INTRACOMMUNITY:
+				initIntraCommunitySupply();
+				break;
+			case TaxCategoryCodeTypeConstants.REVERSECHARGE:
+				setReverseCharge();
+				break;
+			case TaxCategoryCodeTypeConstants.UNTAXEDSERVICE:
+				VATPercent = null;
+				break;
+			default:
+				break;
+		}
 		return this;
 	}
 
@@ -240,11 +255,17 @@ public class Product implements IZUGFeRDExportableProduct {
 	 * @return fluent setter
 	 */
 	public Product setIntraCommunitySupply() {
-		isIntraCommunitySupply = true;
-		setVATPercent(BigDecimal.ZERO);
-		setTaxExemptionReason("Intra-community supply");
+		initIntraCommunitySupply();
 		setTaxCategoryCode("K");
 		return this;
+	}
+
+	private void initIntraCommunitySupply() {
+		isIntraCommunitySupply = true;
+		setVATPercent(BigDecimal.ZERO);
+		if (getTaxExemptionReason() == null || getTaxExemptionReason().isBlank()) {
+			setTaxExemptionReason("Intra-community supply");
+		}
 	}
 
 	@Override
