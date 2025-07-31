@@ -74,14 +74,16 @@ public class LineCalculator {
 //		delta=delta.divide(currentItem.getQuantity(), 18, RoundingMode.HALF_UP);
 
 		BigDecimal delta=BigDecimal.ZERO;
-		if (currentItem.getProduct().getAllowances()!=null) {
-			for (IZUGFeRDAllowanceCharge ccaf:currentItem.getProduct().getAllowances()) {
-				delta=delta.subtract(ccaf.getTotalAmount(currentItem));
+		if(currentItem.getProduct()!=null){
+			if (currentItem.getProduct().getAllowances()!=null) {
+				for (IZUGFeRDAllowanceCharge ccaf:currentItem.getProduct().getAllowances()) {
+					delta=delta.subtract(ccaf.getTotalAmount(currentItem));
+				}
 			}
-		}
-		if (currentItem.getProduct().getCharges()!=null) {
-			for (IZUGFeRDAllowanceCharge ccaf : currentItem.getProduct().getCharges()) {
-				delta = delta.subtract(ccaf.getTotalAmount(currentItem));
+			if (currentItem.getProduct().getCharges()!=null) {
+				for (IZUGFeRDAllowanceCharge ccaf : currentItem.getProduct().getCharges()) {
+					delta = delta.subtract(ccaf.getTotalAmount(currentItem));
+				}
 			}
 		}
 
@@ -92,7 +94,7 @@ public class LineCalculator {
 			? BigDecimal.ONE.setScale(4)
 			: currentItem.getBasisQuantity();
 		itemTotalNetAmount = quantity.multiply(price).divide(basisQuantity, 18, RoundingMode.HALF_UP)
-			.add(lineCharge).subtract(lineAllowance).subtract(allowanceItemTotal).setScale(2, RoundingMode.HALF_UP);
+			.add(lineCharge).subtract(lineAllowance).subtract(allowanceItemTotal.setScale(2, RoundingMode.HALF_UP)).setScale(2, RoundingMode.HALF_UP);
 		itemTotalVATAmount = itemTotalNetAmount.multiply(multiplicator);//.setScale(2, RoundingMode.HALF_UP);
 	}
 

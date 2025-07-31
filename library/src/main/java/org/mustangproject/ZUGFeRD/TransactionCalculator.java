@@ -348,7 +348,7 @@ public class TransactionCalculator implements IAbsoluteValueProvider {
 				() -> vatAmount.setVatExemptionReasonText(toAdd.getVatExemptionReasonText()));
 		}
 	}
-
+	
 	@Override
 	public BigDecimal getValue() {
 		return getTotal();
@@ -361,7 +361,7 @@ public class TransactionCalculator implements IAbsoluteValueProvider {
 	public BigDecimal getAllowanceTotal() {
 		return getAllowancesForPercent(null).setScale(2, RoundingMode.HALF_UP);
 	}
-
+	
 	private Optional<VATAmount> getCurrentVatAmount(List<VATAmount> vatAmounts, String vatCategoryCode, BigDecimal percentage)
 	{
 		return vatAmounts.stream()

@@ -144,7 +144,7 @@ public class Contact implements IZUGFeRDExportableContact {
 					} else if (currentItemNode.getLocalName().equals("Telefax")) { /* UBL */
 						setFax(currentItemNode.getTextContent());
 					}
-					
+
 					if (currentItemNode.getLocalName().equals("EmailURIUniversalCommunication")) { /* CII */
 						NodeList email = currentItemNode.getChildNodes();
 						for (int emailChildIndex = 0; emailChildIndex < email.getLength(); emailChildIndex++) {

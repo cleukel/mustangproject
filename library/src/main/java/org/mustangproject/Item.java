@@ -1,5 +1,6 @@
 package org.mustangproject;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.mustangproject.ZUGFeRD.IReferencedDocument;
@@ -34,7 +35,8 @@ public class Item implements IZUGFeRDExportableItem {
 	protected Date detailedDeliveryPeriodFrom = null;
 	protected Date detailedDeliveryPeriodTo = null;
 	protected String id;
-	protected String referencedLineID = null;
+	protected String buyerOrderReferencedDocumentLineID = null;
+	protected String buyerOrderReferencedDocumentID = null;
 	protected Product product;
 	protected ArrayList<String> notes = null;
 	protected ArrayList<ReferencedDocument> referencedDocuments = null;
@@ -127,6 +129,9 @@ public class Item implements IZUGFeRDExportableItem {
 				.flatMap(bordNodes -> bordNodes.getAsString("LineID"))
 				.ifPresent(this::addReferencedLineID);
 
+			icnm.getAsNodeMap("BuyerOrderReferencedDocument")
+				.flatMap(bordNodes -> bordNodes.getAsString("IssuerAssignedID"))
+				.ifPresent(this::addBuyerOrderReferencedDocumentID);
 
 			icnm.getAsNodeMap("NetPriceProductTradePrice").ifPresent(npptpNodes -> {
 				npptpNodes.getAsBigDecimal("ChargeAmount").ifPresent(this::setPrice);
@@ -280,17 +285,34 @@ public class Item implements IZUGFeRDExportableItem {
 		});
 	}
 
-	public Item addReferencedLineID(String s) {
-		referencedLineID = s;
+	public Item addBuyerOrderReferencedDocumentLineID(String s) {
+		buyerOrderReferencedDocumentLineID = s;
 		return this;
 	}
 
-	@Override public IZUGFeRDAllowanceCharge[] getAllowances() {
+	@Deprecated(since = "2.14.0")
+	public Item addReferencedLineID(String s) {
+		return addBuyerOrderReferencedDocumentLineID(s);
+	}
+
+	@Override
+	public String getBuyerOrderReferencedDocumentID() {
+		return buyerOrderReferencedDocumentID;
+	}
+
+	public Item addBuyerOrderReferencedDocumentID(String s) {
+		buyerOrderReferencedDocumentID = s;
+		return this;
+	}
+
+	@JsonIgnore
+	@Override public IZUGFeRDAllowanceCharge[] getAllowances() { // in JSON is already returned as itemAllowances (and only read from there)
 		IZUGFeRDAllowanceCharge[] izac=new IZUGFeRDAllowanceCharge[Allowances.size()];
 		return Allowances.toArray(izac);
 	}
 
-	@Override public IZUGFeRDAllowanceCharge[] getCharges() {
+	@JsonIgnore
+	@Override public IZUGFeRDAllowanceCharge[] getCharges() { // in JSON is already returned as itemAllowances (and only read from there)
 		IZUGFeRDAllowanceCharge[] izac=new IZUGFeRDAllowanceCharge[Charges.size()];
 		return Charges.toArray(izac);
 	}
@@ -301,7 +323,7 @@ public class Item implements IZUGFeRDExportableItem {
 	 */
 	@Override
 	public String getBuyerOrderReferencedDocumentLineID() {
-		return referencedLineID;
+		return buyerOrderReferencedDocumentLineID;
 	}
 
 	public BigDecimal getLineTotalAmount() {

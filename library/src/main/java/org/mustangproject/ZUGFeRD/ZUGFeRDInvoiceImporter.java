@@ -10,7 +10,6 @@ import org.apache.pdfbox.pdmodel.common.PDNameTreeNode;
 import org.apache.pdfbox.pdmodel.common.filespecification.PDComplexFileSpecification;
 import org.apache.pdfbox.pdmodel.common.filespecification.PDEmbeddedFile;
 import org.mustangproject.*;
-import org.mustangproject.Exceptions.ArithmetricException;
 import org.mustangproject.Exceptions.StructureException;
 import org.mustangproject.util.NodeMap;
 import org.slf4j.Logger;
@@ -161,6 +160,9 @@ public class ZUGFeRDInvoiceImporter {
 					}
 					for (final PDNameTreeNode<PDComplexFileSpecification> node : kids) {
 						final Map<String, PDComplexFileSpecification> namesL = node.getNames();
+						if (namesL == null || namesL.isEmpty()) {
+							continue;
+						}
 						extractFiles(namesL);
 					}
 				}
@@ -171,7 +173,12 @@ public class ZUGFeRDInvoiceImporter {
 		} else {
 			// no PDF probably XML
 			containsMeta = true;
-			setRawXML(XMLTools.getBytesFromStream(pdfStream));
+			try {
+				setRawXML(XMLTools.getBytesFromStream(pdfStream));
+			} catch(ParseException e) {
+				LOGGER.error("Failed to parse PDF", e);
+			}
+
 
 		}
 	}
@@ -216,8 +223,11 @@ public class ZUGFeRDInvoiceImporter {
 				// ByteArrayOutputStream();
 				// FileOutputStream fos = new FileOutputStream(file);
 
-				setRawXML(embeddedFile.toByteArray());
-
+				try {
+					setRawXML(embeddedFile.toByteArray());
+				} catch (ParseException e) {
+					LOGGER.error("Failed to parse XML", e);
+				}
 				// fos.write(embeddedFile.getByteArray());
 				// fos.close();
 			}
@@ -234,7 +244,7 @@ public class ZUGFeRDInvoiceImporter {
 	 * @param doParse automatically parse input for zugferdImporter (not ZUGFeRDInvoiceImporter)
 	 * @throws IOException if parsing xml throws it (unlikely its string based)
 	 */
-	public void setRawXML(byte[] rawXML, boolean doParse) throws IOException {
+	public void setRawXML(byte[] rawXML, boolean doParse) throws IOException, ParseException {
 		this.containsMeta = true;
 		this.rawXML = rawXML;
 		this.version = null;
@@ -242,7 +252,7 @@ public class ZUGFeRDInvoiceImporter {
 
 		try {
 			setDocument();
-		} catch (ParserConfigurationException | SAXException | ParseException e) {
+		} catch (ParserConfigurationException | SAXException e) {
 			LOGGER.error("Failed to parse XML", e);
 			throw new ZUGFeRDExportException(e);
 		}
@@ -254,7 +264,7 @@ public class ZUGFeRDInvoiceImporter {
 	 * @param rawXML the cii(?) as a string
 	 * @throws IOException  if parsing xml throws it (unlikely its string based)
 	 */
-	public void setRawXML(byte[] rawXML) throws IOException {
+	public void setRawXML(byte[] rawXML) throws IOException, ParseException {
 		setRawXML(rawXML, true);
 	}
 
@@ -566,6 +576,15 @@ public class ZUGFeRDInvoiceImporter {
 			if (!deliveryDt.isEmpty()) {
 				deliveryDate = new SimpleDateFormat("yyyy-MM-dd").parse(deliveryDt);
 			}
+		}
+
+		String creditorReferenceID = extractString("//*[local-name()=\"ApplicableHeaderTradeSettlement\"]/*[local-name()=\"CreditorReferenceID\"]").trim();//BT-90
+		if ((creditorReferenceID == null)||(creditorReferenceID.length()==0)) {
+			//maybe it's there in UBL?
+			creditorReferenceID = extractString("//*[local-name()=\"AccountingSupplierParty\"]/*[local-name()=\"Party\"]/*[local-name()=\"PartyIdentification\"]/*[local-name()=\"ID\"]").trim();
+		}
+		if ((creditorReferenceID != null)&&(creditorReferenceID.length()>0)) {
+			zpp.setCreditorReferenceID(creditorReferenceID);
 		}
 
 		xpr = xpath.compile("//*[local-name()=\"ApplicableHeaderTradeDelivery\"]|//*[local-name()=\"Delivery\"]");
@@ -1076,7 +1095,7 @@ public class ZUGFeRDInvoiceImporter {
 							.collect(Collectors.joining(" + "));
 					} catch (Exception ignored) {
 					}
-					throw new ArithmetricException("Payable total in XML is " + payableTotalFromXml + ", but calculated total is " + calculatedPayableTotal + moreDetails);
+					throw new ArithmeticException("Payable total in XML is " + payableTotalFromXml + ", but calculated total is " + calculatedPayableTotal + moreDetails);
 				}
 			}
 		}
@@ -1193,7 +1212,7 @@ public class ZUGFeRDInvoiceImporter {
 	 * sets the XML for the importer to parse
 	 * @param XML the UBL or CII
 	 */
-	public void fromXML(String XML) {
+	public void fromXML(String XML) throws ParseException{
 		try {
 			containsMeta = true;
 			setRawXML(XML.getBytes(StandardCharsets.UTF_8));
