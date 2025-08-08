@@ -567,7 +567,8 @@ public class Main {
 		// All params are good! continue...
 		ZUGFeRDImporter zi = new ZUGFeRDImporter();
 		zi.doIgnoreCalculationErrors();
-		zi.setPDFFilename(pdfName);		byte[] XMLContent = zi.getRawXML();
+		zi.setPDFFilename(pdfName);
+		byte[] XMLContent = zi.getRawXML();
 		if (XMLContent == null) {
 			System.err.println("No ZUGFeRD XML found in PDF file");
 
