@@ -120,13 +120,17 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 		return profile;
 	}
 
-	// @todo check if the two boolean args can be refactored
-
+	/***
+	 * #LEUMOD 2.18.1
+	 * @todo check if the two boolean args can be refactored
+	 */
 	protected String getTradePartyAsXML(IZUGFeRDExportableTradeParty party, boolean isSender, boolean isShipToTradeParty) {
 		return getTradePartyAsXML(party, isSender, isShipToTradeParty, false);
 	}
 
 	/***
+	 * #LEUMOD 2.18.1
+	 *
 	 * returns the UN/CEFACT CII XML for companies(tradeparties), which is actually
 	 * the same for ZF1 (v 2013b) and ZF2 (v 2016b)
 	 * @param party any sender, recipient, seller or legal party involved
@@ -229,7 +233,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 				XMLTools.encodeXML(party.getUriUniversalCommunicationID())
 				+ "</ram:URIID></ram:URIUniversalCommunication>";
 		}
-
+		// #LEUMOD 2.18.1
 		if ((party.getVATID() != null) && (!isShipToTradeParty) && !omitTaxRegistration) {
 			xml += "<ram:SpecifiedTaxRegistration>"
 				+ "<ram:ID schemeID=\"VA\">" + XMLTools.encodeXML(party.getVATID())
@@ -556,6 +560,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 					+ "<ram:SpecifiedLineTradeSettlement>"
 					+ "<ram:ApplicableTradeTax>"
 					+ "<ram:TypeCode>VAT</ram:TypeCode>";
+				// #LEUMOD 2.18.1
 				if (currentItem.getProduct().getTaxExemptionReason() != null && !currentItem.getProduct().getTaxExemptionReason().trim().isEmpty()) {
 					xml += "<ram:ExemptionReason>" + XMLTools.encodeXML(currentItem.getProduct().getTaxExemptionReason()) + "</ram:ExemptionReason>";
 				}
@@ -622,6 +627,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 
 		}
 
+		// #LEUMOD 2.18.1
 		final List<VATAmount> vatAmounts = calc.getVATAmountList();
 		final boolean hasTaxCategoryO = vatAmounts.stream().anyMatch(ax -> "O".equals(ax.getCategoryCode()));
 		final boolean isExtended = getProfile() == Profiles.getByName("EXTENDED");
@@ -630,8 +636,9 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 			xml += "<ram:BuyerReference>" + XMLTools.encodeXML(trans.getReferenceNumber()) + "</ram:BuyerReference>";
 
 		}
-		xml += "<ram:SellerTradeParty>" + getTradePartyAsXML(trans.getSender(), true, false) + "</ram:SellerTradeParty>";
-		xml += "<ram:BuyerTradeParty>" + getTradePartyAsXML(trans.getRecipient(), false, false) + "</ram:BuyerTradeParty>";
+		// #LEUMOD 2.18.1
+		xml += "<ram:SellerTradeParty>" + getTradePartyAsXML(trans.getSender(), true, false, hasTaxCategoryO && !isExtended) + "</ram:SellerTradeParty>";
+		xml += "<ram:BuyerTradeParty>" + getTradePartyAsXML(trans.getRecipient(), false, false, hasTaxCategoryO && !isExtended) + "</ram:BuyerTradeParty>";
 
 		if (trans.getSellerOrderReferencedDocumentID() != null && !trans.getSellerOrderReferencedDocumentID().trim().isEmpty()) {
 			xml += "<ram:SellerOrderReferencedDocument>"
@@ -695,6 +702,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 		xml += "<ram:ApplicableHeaderTradeDelivery>";
 
 		if (this.trans.getDeliveryAddress() != null) {
+			// #LEUMOD 2.18.1
 			xml += "<ram:ShipToTradeParty>" +
 				getTradePartyAsXML(this.trans.getDeliveryAddress(), false, true, hasTaxCategoryO && !isExtended) +
 				"</ram:ShipToTradeParty>";
@@ -775,28 +783,39 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 			}
 		}
 
-		for (final VATAmount amount : vatAmounts) {
+		// #LEUMOD 2.18.1
+		boolean skipTaxCategoryO = false;
+		if (!isExtended && vatAmounts.size() > 1 && hasTaxCategoryO) {
+			skipTaxCategoryO = true;
+		}
+		for (final VATAmount amount : vatAmounts)
+		{
 			if (amount != null) {
 				final String amountCategoryCode = amount.getCategoryCode();
-				final String amountDueDateTypeCode = amount.getDueDateTypeCode();
-				final boolean displayExemptionReason = CATEGORY_CODES_WITH_EXEMPTION_REASON.contains(amountCategoryCode);
-				if (getProfile() != Profiles.getByName("Minimum")) {
-					String exemptionReasonTextXML = "";
-					if ((displayExemptionReason) && (amount.getVatExemptionReasonText() != null)) {
-						exemptionReasonTextXML = "<ram:ExemptionReason>" + XMLTools.encodeXML(amount.getVatExemptionReasonText()) + "</ram:ExemptionReason>";
-					}
+				// #LEUMOD 2.18.1
+				if (!skipTaxCategoryO || (skipTaxCategoryO && !amountCategoryCode.equals("O"))) {
+					final String amountDueDateTypeCode = amount.getDueDateTypeCode();
+					final boolean displayExemptionReason = CATEGORY_CODES_WITH_EXEMPTION_REASON.contains(amountCategoryCode);
+					if (getProfile() != Profiles.getByName("Minimum")) {
+						String exemptionReasonTextXML = "";
+						if ((displayExemptionReason) && (amount.getVatExemptionReasonText() != null)) {
+							exemptionReasonTextXML = "<ram:ExemptionReason>" + XMLTools.encodeXML(amount.getVatExemptionReasonText()) + "</ram:ExemptionReason>";
+						}
 
-					xml += "<ram:ApplicableTradeTax>"
-						+ "<ram:CalculatedAmount>" + currencyFormat(amount.getCalculated())
-						+ "</ram:CalculatedAmount>" //currencyID=\"EUR\"
-						+ "<ram:TypeCode>VAT</ram:TypeCode>"
-						+ exemptionReasonTextXML
-						+ "<ram:BasisAmount>" + currencyFormat(amount.getBasis()) + "</ram:BasisAmount>" // currencyID=\"EUR\"
-						+ "<ram:CategoryCode>" + amountCategoryCode + "</ram:CategoryCode>"
-						+ (amountDueDateTypeCode != null ? "<ram:DueDateTypeCode>" + amountDueDateTypeCode + "</ram:DueDateTypeCode>" : "");
-					xml += "<ram:RateApplicablePercent>"
-						+ vatFormat(amount.getApplicablePercent()) + "</ram:RateApplicablePercent>";
-					xml += "</ram:ApplicableTradeTax>";
+						xml += "<ram:ApplicableTradeTax>"
+							+ "<ram:CalculatedAmount>" + currencyFormat(amount.getCalculated())
+							+ "</ram:CalculatedAmount>" //currencyID=\"EUR\"
+							+ "<ram:TypeCode>VAT</ram:TypeCode>"
+							+ exemptionReasonTextXML
+							+ "<ram:BasisAmount>" + currencyFormat(amount.getBasis()) + "</ram:BasisAmount>" // currencyID=\"EUR\"
+							+ "<ram:CategoryCode>" + amountCategoryCode + "</ram:CategoryCode>"
+							+ (amountDueDateTypeCode != null ? "<ram:DueDateTypeCode>" + amountDueDateTypeCode + "</ram:DueDateTypeCode>" : "");
+						if (!amountCategoryCode.equals(TaxCategoryCodeTypeConstants.UNTAXEDSERVICE)) {
+							xml += "<ram:RateApplicablePercent>"
+								+ vatFormat(amount.getApplicablePercent()) + "</ram:RateApplicablePercent>";
+						}
+						xml += "</ram:ApplicableTradeTax>";
+					}
 				}
 			}
 		}

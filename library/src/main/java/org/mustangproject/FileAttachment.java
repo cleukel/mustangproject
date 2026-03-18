@@ -1,17 +1,11 @@
 package org.mustangproject;
 
-import java.util.Base64;
-import java.util.Date;
-
-import org.mustangproject.ZUGFeRD.IReferencedDocument;
-import org.mustangproject.ZUGFeRD.model.TypeCodeConstants;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-public class FileAttachment implements IReferencedDocument {
+public class FileAttachment {
 
 	protected String filename;
 	protected String mimetype;
@@ -113,26 +107,5 @@ public class FileAttachment implements IReferencedDocument {
 	public FileAttachment setData(byte[] data) {
 		this.data = data;
 		return this;
-	}
-
-	@Override
-	public String getIssuerAssignedID() {
-		return getFilename();
-	}
-
-	@Override
-	public String getTypeCode() {
-		return TypeCodeConstants.REFERENCED_DOCUMENT;
-	}
-
-	@Override
-	public String getReferenceTypeCode() {
-		return "";
-	}
-
-	@Override
-	public Date getFormattedIssueDateTime()
-	{
-		return null;
 	}
 }

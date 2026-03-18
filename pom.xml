@@ -3,6 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.mustangproject</groupId>
     <artifactId>core</artifactId>
+    <!-- #LEUMOD 2.22.0 -->
     <version>2.22.0-TWA</version>
     <packaging>pom</packaging>
     <name>Mustang</name>
@@ -130,11 +131,10 @@
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.7.0</version>
+                <version>${version.org.sonatype.plugins}</version>
                 <extensions>true</extensions>
                 <configuration>
                     <serverId>ossrh</serverId>
-                    <nexusUrl>https://ossrh-staging-api.central.sonatype.com/</nexusUrl>
                     <nexusUrl>https://ossrh-staging-api.central.sonatype.com/</nexusUrl>
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>

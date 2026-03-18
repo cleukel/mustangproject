@@ -8,7 +8,6 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>library</artifactId>
-    <version>2.22.0-TWA</version>
     <packaging>jar</packaging>
     <name>Library to write, read and validate e-invoices (Factur-X, ZUGFeRD, Order-X, XRechnung/CII)</name>
     <description>FOSS Java library to read, write and validate european electronic invoices and orders in the UN/CEFACT
@@ -102,22 +101,21 @@
                 </exclusion>
             </exclusions>
         </dependency>
-				<!-- CII to UBL conversion -->
-		<dependency>
-			<groupId>com.helger</groupId>
-			<artifactId>en16931-cii2ubl</artifactId>
-			<version>2.3.0</version>
-		</dependency>
+        <!-- CII to UBL conversion -->
+        <dependency>
+            <groupId>com.helger</groupId>
+            <artifactId>en16931-cii2ubl</artifactId>
+            <version>${version.com.helger.en16931-cii2ubl}</version>
+        </dependency>
 
-		<!-- test dependencies -->
+        <!-- test dependencies -->
         <dependency>
             <groupId>org.skyscreamer</groupId>
             <artifactId>jsonassert</artifactId>
-            <version>2.0-rc1</version>
+            <version>${version.org.skyscreamer}</version>
             <scope>test</scope>
         </dependency>
-
-		<dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>${version.org.junit}</version>

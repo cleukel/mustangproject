@@ -20,7 +20,6 @@
  */
 package org.mustangproject.ZUGFeRD;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,6 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

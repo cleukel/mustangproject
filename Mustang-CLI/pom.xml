@@ -11,20 +11,15 @@
         Validation should also work for XRechnung/CII.
     </name>
     <packaging>jar</packaging>
-    <version>2.22.0-TWA</version>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>11</maven.compiler.release>
     </properties>
     <dependencies>
-        <dependency>
-            <groupId>org.mustangproject</groupId>
-            <artifactId>validator</artifactId>
-            <version>2.22.0-TWA</version>
-            <!-- prototypes of new mustangproject versions can be installed by referring to them and installed to the local repo from a jar file with
+        <!-- compile dependencies -->
+        <!-- prototypes of new mustangproject versions can be installed by referring to them and installed to the local repo from a jar file with
            mvn install:install-file -Dfile=mustang-1.5.4-SNAPSHOT.jar -DgroupId=org.mustangproject.ZUGFeRD -DartifactId=mustang -Dversion=1.5.4 -Dpackaging=jar -DgeneratePom=true
           -->
-        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>library</artifactId>

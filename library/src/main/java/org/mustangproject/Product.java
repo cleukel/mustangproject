@@ -197,6 +197,7 @@ public class Product implements IZUGFeRDExportableProduct {
 	 */
 	public Product setTaxCategoryCode(String code) {
 		taxCategoryCode = code;
+		// #LEUMOD 2.18.1
 		isIntraCommunitySupply = false;
 		isReverseCharge = false;
 		switch (taxCategoryCode) {
@@ -278,11 +279,15 @@ public class Product implements IZUGFeRDExportableProduct {
 	 * @return fluent setter
 	 */
 	public Product setIntraCommunitySupply() {
+		// #LEUMOD 2.18.1
 		initIntraCommunitySupply();
 		setTaxCategoryCode("K");
 		return this;
 	}
 
+	/**
+	 * #LEUMOD 2.18.1
+	 */
 	private void initIntraCommunitySupply() {
 		isIntraCommunitySupply = true;
 		setVATPercent(BigDecimal.ZERO);
