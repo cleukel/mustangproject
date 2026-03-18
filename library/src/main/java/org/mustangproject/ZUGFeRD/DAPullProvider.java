@@ -79,7 +79,7 @@ public class DAPullProvider extends ZUGFeRD2PullProvider {
 			if (currentItem.getProduct().getTaxExemptionReason() != null) {
 				//	exemptionReason = "<ram:ExemptionReason>" + XMLTools.encodeXML(currentItem.getProduct().getTaxExemptionReason()) + "</ram:ExemptionReason>";
 			}
-      final LineCalculator lc = new LineCalculator(currentItem);
+            final LineCalculator lc = currentItem.getCalculation();
 			xml += "<ram:IncludedSupplyChainTradeLineItem>" +
 					"<ram:AssociatedDocumentLineDocument>"
 					+ "<ram:LineID>" + lineID + "</ram:LineID>"
@@ -97,12 +97,12 @@ public class DAPullProvider extends ZUGFeRD2PullProvider {
 						+ XMLTools.encodeXML(currentItem.getProduct().getBuyerAssignedID()) + "</ram:BuyerAssignedID>";
 			}
 			String allowanceChargeStr = "";
-			if (currentItem.getItemAllowances() != null && currentItem.getItemAllowances().length > 0) {
+			if (currentItem.getItemAllowances() != null) {
 				for (final IZUGFeRDAllowanceCharge allowance : currentItem.getItemAllowances()) {
 					allowanceChargeStr += getAllowanceChargeStr(allowance, currentItem);
 				}
 			}
-			if (currentItem.getItemCharges() != null && currentItem.getItemCharges().length > 0) {
+			if (currentItem.getItemCharges() != null) {
 				for (final IZUGFeRDAllowanceCharge charge : currentItem.getItemCharges()) {
 					allowanceChargeStr += getAllowanceChargeStr(charge, currentItem);
 
@@ -182,7 +182,7 @@ public class DAPullProvider extends ZUGFeRD2PullProvider {
 		// Additional Documents of XRechnung (Rechnungsbegruendende Unterlagen - BG-24 XRechnung)
 		if (trans.getAdditionalReferencedDocuments() != null) {
 			for (final FileAttachment f : trans.getAdditionalReferencedDocuments()) {
-				final String documentContent = new String(Base64.getEncoder().encodeToString(f.getData()));
+				final String documentContent = Base64.getEncoder().encodeToString(f.getData());
 				xml += "<ram:AdditionalReferencedDocument>"
 						+ "<ram:IssuerAssignedID>" + f.getFilename() + "</ram:IssuerAssignedID>"
 						+ "<ram:TypeCode>916</ram:TypeCode>"

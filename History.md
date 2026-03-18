@@ -1,3 +1,94 @@
+
+2.22.0
+=======
+2026-02-04
+
+- #990 Fix empty ValidationResult when XMP metadata contains invalid XML characters
+- #859 SpecifiedTradePaymentTerms doppelt in der XML ab Version 2.16.5
+- #992 fix typo
+- #253/#994 add DeliveryNoteReferencedDocument for import and export
+- #999 Write RateApplicablePercent on head also for tax free
+- #997 CategoryCode O Need VAT rate in header breakdown (BT-119) but MUST omit line VAT rate (BT-152)
+- #1000 Support ItemSellerTradeParty at line level (Factur-X / ZUGFeRD EXTENDED) for French municipalities subcontracting services to other municipalities
+- #1011 calculatedinvoice needs to contain VATtotal
+- #1003 IncludedNote SubjectCode PMD AAB
+- #998 ZUGFeRDInvoiceImporter does not properly handle UBL CreditNote documents
+- #1006 Duplicate Notes and Missing BIC Parsing in ZUGFeRDInvoiceImporter
+- #1010 add DeliveryNoteReferencedDocument per Item
+- #1017 Concurrency problems in ZUGFeRDDateFormat
+- #536 Add Field for "Invoiced Object Identifier" (BT-18) in Invoice.java to Align with XRechnung Requirements
+- deprecate itemTotalAllowances instead of itemAllowances over itemCharges
+- corrected import of UBL rounding amount
+
+2.21.0
+=======
+2025-12-18
+
+- #969 Support Factur-X 1.08 / ZUGFeRD 2.4
+- #978 Subtotal validation in ZF 2.4 Extended
+- #952 Add optional Invoicer and Invoicee for Extended profile
+- #954 Parsing XML documents fails with ZUGFeRD visualizer due to secure processing not being functional
+- #947 replace fixed version number with new variable from root pom.xml
+- #984 set default vat exemtion reason text on reverse charge
+- #983 Be able to easily reference an invoice in a credit memo
+- #979, #985 allow vat percent=null sometimes
+- #977 Update History.md
+- 961/962 Adding a tax ExemptionReasonCode to Product/TradeTax for the XML generation
+- have a start of a primitive and incomplete list of human readable unit codes
+
+2.20.0
+=======
+2025-10-30
+
+- upgrade to pdfbox 3.0.6
+- #950 issues with nonshaded version: 2.19.1: ClassNotFoudException while running the PDFValidator
+- #959 Added FactoorSharp to the list of valid pdf sources
+- change return type of getCashDiscounts to CashDiscount object, not interface
+- #923 Support for BT-17 (tender or lot reference)
+- #960 incorrect calculation for product charges
+
+2.19.1
+=======
+2025-10-09
+
+- added JSONIgnore for Products intra community supply, reverse charge and invoice's isValid (which rather means isComplete, by the way)
+- #917/#940 percentual allowance/charges actualamount not multiplied with qty/Some quantities and allowances may cause Non-terminating decimal expansion
+- #915 Update SubjectCode.java to add subject code 'PMT'
+- #921 Treat schematron rule flag "information" as notice.
+- #926 reject FX with UBL
+- upgrade apache fop 2.10 to 2.11
+- #931 Enable setting and reading Additional Document Description.
+- #932 Fix typo
+- #933,  #413, #557, #765 Format list of dates for PDFs individually/Bug: "FORG0001: Invalid date (Day must be two digits)" bei der Transformation von ZUGFeRD nach PDF/Visualize XML into PDF throws error if XML contains multiple SpecifiedTradePaymentTerms blocks/Exception when generating PDF 
+- make Line Calculation, e.g. total line net amount, accessible via JSON using getCalculation
+- #939 Remove System.out.println from XRTest.java
+- #692 parse cash discounts
+- #943/#944 ZUGFeRD2PullProvider getXML() does not set fixed Encoding / Use UTF-8 when creating new Strings from byte[].
+- #914 Optimize pom.xml´s.
+
+2.19.0
+=======
+2025-08-12
+
+changes
+- #913 downgrade PDF/A errors to warnings
+
+corrections
+- #893 Tradeparty globalID is not read from JSON
+- #902 Tests to use definted TZ (UTC)
+- #905 Parse product level charges/discounts into JSON
+- #869 Import Account Holder returns SellerTradeParty.name instead of AccountHolder
+- #861 Multiple problems with Product.CountryOfOrigin
+- #882 Change order of ApplicableProductCharacteristic and DesignatedProduct…
+- #899 fix encoding error in ZUGFeRDInvoiceImporter.java
+- #901 Enhance code quality - part 2
+- #908 Validation: Make clear when embedded file name is wrong
+- #909 ShipToTradeParty should not contain URIUniversalCommunication
+- #821 ERROR org.mustangproject.ZUGFeRD.ValidationLogVisualizer - Failed to create PDF
+- #911 Update validation to XRechnung 3.0.2.
+- #912 github action tz issue
+
+
 2.18.0
 =======
 2025-07-14
@@ -90,7 +181,7 @@
 - #707 invoiceimporter may fail if certain values are not set
 - #708 embedded files cannot be determined
 - #709 ZUGFeRDInvoiceImporter ignored "first" embedded file in list of pdf attachments
-- #607 Enable flexible PaymentReference and a DocumentName.
+- #607 Enable flexible PaymentReference and a DocumentName. **Important note:** The library’s behavior for generating ZUGFeRD 2 documents is not fully backward compatible. Except for the “Minimum” profile, BT‑83 was automatically populated with the document number in earlier versions. From this release onward, applications must explicitly set BT‑83.
 - #649 Reuse toPDF method to work without any dependencies to the file system
 - #650 Add net.sf.offo:fop-hyph
 - #665 Fix #632: Return ubl_creditnote as Standard for CreditNotes

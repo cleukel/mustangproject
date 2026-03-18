@@ -121,6 +121,7 @@ public class ZUGFeRDValidator {
 					// Avoid reading again from file
 					pdfv.setFilenameAndContents(contextFilename, content);
 
+					context.setHasPDF();
 					optionsRecognized = true;
 					finalStringResult.append("<pdf>");
 					try {
@@ -202,10 +203,6 @@ public class ZUGFeRDValidator {
 					finalStringResult.append(xv.getXMLResult());
 					finalStringResult.append("</xml>");
 					context.clearCustomXML();
-				}
-
-				if ((isPDF) && (!pdfValidity)) {
-					context.setInvalid();
 				}
 
 			}
@@ -304,7 +301,7 @@ public class ZUGFeRDValidator {
 		StringWriter sw = new StringWriter();
 		org.dom4j.Document document = null;
 		try {
-			document = DocumentHelper.parseText(new String(finalStringResult));
+			document = DocumentHelper.parseText(finalStringResult.toString());
 		} catch (DocumentException e1) {
 			LOGGER.error(e1.getMessage());
 		}
@@ -337,7 +334,7 @@ public class ZUGFeRDValidator {
 			+ " Signature:" + Signature + " Checksum:" + sha1Checksum + " Profile:" + context.getProfile()
 			+ " Version:" + context.getGeneration() + " Took:" + duration + "ms Errors:[" + context.getCSVResult()
 			+ "] ErrorIDs: [" + context.getCSVIDResult()  + "]" + toBeAppended);
-		wasCompletelyValid = ((pdfValidity) && (xmlValidity));
+		wasCompletelyValid = xmlValidity;
 		return sw.toString();
 	}
 

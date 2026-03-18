@@ -1,0 +1,10 @@
+{
+    "java.compile.nullAnalysis.mode": "automatic",
+    "maven.excludedFolders": [
+        "**/.*",
+        "**/node_modules",
+        "**/target",
+        "**/bin",
+        "**/archetype-resources"
+    ]
+}

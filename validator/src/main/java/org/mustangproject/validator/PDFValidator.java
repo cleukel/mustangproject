@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Set;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -42,6 +43,7 @@ import org.verapdf.processor.TaskType;
 import org.verapdf.processor.plugins.PluginsCollectionConfig;
 import org.verapdf.processor.reports.ItemDetails;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -65,7 +67,7 @@ public class PDFValidator extends Validator {
 	private String Signature;
 
 	private String zfXML = null;
-	protected boolean autoload=true;
+	protected boolean autoload = true;
 
 	protected static boolean stringArrayContains(String[] arr, String targetValue) {
 		return Arrays.asList(arr).contains(targetValue);
@@ -130,136 +132,147 @@ public class PDFValidator extends Validator {
 
 		final Document docXMP;
 
-		if (xmp == null || xmp.length() == 0) {
+		if (xmp == null || xmp.isEmpty()) {
 			context.addResultItem(new ValidationResultItem(ESeverity.error, "Invalid XMP Metadata not found")
 				.setSection(17).setPart(EPart.pdf));
-		}
-		else
-		/*
-		 * checking for sth like <zf:ConformanceLevel>EXTENDED</zf:ConformanceLevel>
-		 * <zf:DocumentType>INVOICE</zf:DocumentType>
-		 * <zf:DocumentFileName>ZUGFeRD-invoice.xml</zf:DocumentFileName>
-		 * <zf:Version>1.0</zf:Version>
-		 */
-		try {
-			final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-			factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-			// and these as well, per Timothy Morgan's 2014 paper: "XML Schema, DTD, and Entity Attacks"
-			factory.setXIncludeAware(false);
+		} else {
+			/*
+			 * checking for sth like <zf:ConformanceLevel>EXTENDED</zf:ConformanceLevel>
+			 * <zf:DocumentType>INVOICE</zf:DocumentType>
+			 * <zf:DocumentFileName>ZUGFeRD-invoice.xml</zf:DocumentFileName>
+			 * <zf:Version>1.0</zf:Version>
+			 */
+			try {
+				final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+				factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+				// and these as well, per Timothy Morgan's 2014 paper: "XML Schema, DTD, and Entity Attacks"
+				factory.setXIncludeAware(false);
 
-			final DocumentBuilder builder = factory.newDocumentBuilder();
-			final InputSource is = new InputSource(new StringReader(xmp));
-			docXMP = builder.parse(is);
+				final DocumentBuilder builder = factory.newDocumentBuilder();
+				final InputSource is = new InputSource(new StringReader(xmp));
+				docXMP = builder.parse(is);
 
-			final XPathFactory xpathFactory = XPathFactory.newInstance();
+				final XPathFactory xpathFactory = XPathFactory.newInstance();
 
-			// Create XPath object XPath xpath = xpathFactory.newXPath(); XPathExpression
+				// Create XPath object XPath xpath = xpathFactory.newXPath(); XPathExpression
 
-			final XPath xpath = xpathFactory.newXPath();
-			// xpath.compile("//*[local-name()=\"GuidelineSpecifiedDocumentContextParameter\"]/[local-name()=\"ID\"]");
-			// evaluate expression result on XML document ndList = (NodeList)
+				final XPath xpath = xpathFactory.newXPath();
+				// xpath.compile("//*[local-name()=\"GuidelineSpecifiedDocumentContextParameter\"]/[local-name()=\"ID\"]");
+				// evaluate expression result on XML document ndList = (NodeList)
 
-			// get the first element
-			XPathExpression xpr = xpath.compile(
-				"//*[local-name()=\"ConformanceLevel\"]|//*[local-name()=\"Description\"]/@ConformanceLevel");
-			NodeList nodes = (NodeList) xpr.evaluate(docXMP, XPathConstants.NODESET);
+				// get the first element
+				XPathExpression xpr = xpath.compile(
+					"//*[local-name()=\"ConformanceLevel\"]|//*[local-name()=\"Description\"]/@ConformanceLevel");
+				NodeList nodes = (NodeList) xpr.evaluate(docXMP, XPathConstants.NODESET);
 
-			if (nodes.getLength() == 0) {
-				context.addResultItem(
-					new ValidationResultItem(ESeverity.error, "XMP Metadata: ConformanceLevel not found")
-						.setSection(11).setPart(EPart.pdf));
-			}
-
-			boolean conformanceLevelValid = false;
-			for (int i = 0; i < nodes.getLength(); i++) {
-
-				final String[] valueArray = {"BASIC WL", "BASIC", "MINIMUM", "EN 16931", "COMFORT", "CIUS", "EXTENDED", "XRECHNUNG"};
-				if (stringArrayContains(valueArray, nodes.item(i).getTextContent())) {
-					conformanceLevelValid = true;
-				}
-			}
-			if (!conformanceLevelValid) {
-				context.addResultItem(new ValidationResultItem(
-					ESeverity.error,
-					"XMP Metadata: ConformanceLevel contains invalid value"
-				).setSection(12).setPart(EPart.pdf));
-
-			}
-			xpr = xpath.compile("//*[local-name()=\"DocumentType\"]|//*[local-name()=\"Description\"]/@DocumentType");
-			nodes = (NodeList) xpr.evaluate(docXMP, XPathConstants.NODESET);
-
-			if (nodes.getLength() == 0) {
-				context.addResultItem(new ValidationResultItem(ESeverity.error, "XMP Metadata: DocumentType not found")
-					.setSection(13).setPart(EPart.pdf));
-			}
-
-			boolean documentTypeValid = false;
-			for (int i = 0; i < nodes.getLength(); i++) {
-				if (nodes.item(i).getTextContent().equals("INVOICE") || nodes.item(i).getTextContent().equals("ORDER")
-					|| nodes.item(i).getTextContent().equals("ORDER_RESPONSE") || nodes.item(i).getTextContent()
-					.equals("ORDER_CHANGE")) {
-					documentTypeValid = true;
-				}
-			}
-			if (!documentTypeValid) {
-				context.addResultItem(
-					new ValidationResultItem(ESeverity.error, "XMP Metadata: DocumentType invalid")
-						.setSection(14).setPart(EPart.pdf));
-
-			}
-			xpr = xpath.compile(
-				"//*[local-name()=\"DocumentFileName\"]|//*[local-name()=\"Description\"]/@DocumentFileName");
-			nodes = (NodeList) xpr.evaluate(docXMP, XPathConstants.NODESET);
-
-			if (nodes.getLength() == 0) {
-				context.addResultItem(
-					new ValidationResultItem(ESeverity.error, "XMP Metadata: DocumentFileName not found")
-						.setSection(21).setPart(EPart.pdf));
-			}
-			boolean documentFilenameValid = false;
-			for (int i = 0; i < nodes.getLength(); i++) {
-				final String[] valueArray = {"factur-x.xml", "ZUGFeRD-invoice.xml", "zugferd-invoice.xml", "xrechnung.xml", "order-x.xml"};
-				if (stringArrayContains(valueArray, nodes.item(i).getTextContent())) {
-					documentFilenameValid = true;
+				if (nodes.getLength() == 0) {
+					context.addResultItem(
+						new ValidationResultItem(ESeverity.error, "XMP Metadata: ConformanceLevel not found")
+							.setSection(11).setPart(EPart.pdf));
 				}
 
-				// e.g. ZUGFeRD-invoice.xml
-			}
-			if (!documentFilenameValid) {
+				boolean conformanceLevelValid = false;
+				for (int i = 0; i < nodes.getLength(); i++) {
 
-				context.addResultItem(new ValidationResultItem(
-					ESeverity.error,
-					"XMP Metadata: DocumentFileName contains invalid value"
-				).setSection(19).setPart(EPart.pdf));
-			}
-			xpr = xpath.compile("//*[local-name()=\"Version\"]|//*[local-name()=\"Description\"]/@Version");
-			nodes = (NodeList) xpr.evaluate(docXMP, XPathConstants.NODESET);
+					final String[] valueArray = {"BASIC WL", "BASIC", "MINIMUM", "EN 16931", "COMFORT", "CIUS", "EXTENDED", "XRECHNUNG"};
+					if (stringArrayContains(valueArray, nodes.item(i).getTextContent())) {
+						conformanceLevelValid = true;
+					}
+				}
+				if (!conformanceLevelValid) {
+					context.addResultItem(new ValidationResultItem(
+						ESeverity.error,
+						"XMP Metadata: ConformanceLevel contains invalid value"
+					).setSection(12).setPart(EPart.pdf));
 
-			// get all child nodes
-			// NodeList nodes = element.getChildNodes();
-			// expr.evaluate(docXMP, XPathConstants.NODESET);
-			// print the text content of each child
-			if (nodes.getLength() == 0) {
-				context.addResultItem(new ValidationResultItem(ESeverity.error, "XMP Metadata: Version not found")
-					.setSection(15).setPart(EPart.pdf));
-			}
+				}
+				xpr = xpath.compile("//*[local-name()=\"DocumentType\"]|//*[local-name()=\"Description\"]/@DocumentType");
+				nodes = (NodeList) xpr.evaluate(docXMP, XPathConstants.NODESET);
 
-			boolean versionValid = false;
-			for (int i = 0; i < nodes.getLength(); i++) {
-				final String[] valueArray = {"1.0", "1p0", "2p0", "1.2", "2.0", "2.1", "2.2", "2.3", "3.0"}; //1.2, 2.0, 2.1, 2.2, 2.3 and 3.0 are for xrechnung 1.2, 2p0 can be ZF 2.0, 2.1, 2.1.1
+				if (nodes.getLength() == 0) {
+					context.addResultItem(new ValidationResultItem(ESeverity.error, "XMP Metadata: DocumentType not found")
+						.setSection(13).setPart(EPart.pdf));
+				}
 
-				if (stringArrayContains(valueArray, nodes.item(i).getTextContent())) {
-					versionValid = true;
-				} // e.g. 1.0
-			}
-			if (!versionValid) {
+				boolean documentTypeValid = false;
+				for (int i = 0; i < nodes.getLength(); i++) {
+					Node item = nodes.item(i);
+					String textContent = item.getTextContent();
+					if (textContent != null && Set.of("INVOICE", "ORDER", "ORDER_RESPONSE", "ORDER_CHANGE").contains(textContent)) {
+						documentTypeValid = true;
+					}
+				}
+				if (!documentTypeValid) {
+					context.addResultItem(
+						new ValidationResultItem(ESeverity.error, "XMP Metadata: DocumentType invalid")
+							.setSection(14).setPart(EPart.pdf));
+
+				}
+				xpr = xpath.compile(
+					"//*[local-name()=\"DocumentFileName\"]|//*[local-name()=\"Description\"]/@DocumentFileName");
+				nodes = (NodeList) xpr.evaluate(docXMP, XPathConstants.NODESET);
+
+				if (nodes.getLength() == 0) {
+					context.addResultItem(
+						new ValidationResultItem(ESeverity.error, "XMP Metadata: DocumentFileName not found")
+							.setSection(21).setPart(EPart.pdf));
+				}
+				boolean documentFilenameValid = false;
+				for (int i = 0; i < nodes.getLength(); i++) {
+					final String[] valueArray = {"factur-x.xml", "ZUGFeRD-invoice.xml", "zugferd-invoice.xml", "xrechnung.xml", "order-x.xml"};
+					if (stringArrayContains(valueArray, nodes.item(i).getTextContent())) {
+						documentFilenameValid = true;
+					}
+
+					// e.g. ZUGFeRD-invoice.xml
+				}
+				if (!documentFilenameValid) {
+
+					if (zi.hasXMLFileAttachment()) {
+						context.addResultItem(new ValidationResultItem(
+							ESeverity.notice,
+							"Potentially incorrectly named XML file attachments detected"
+						).setSection(17).setPart(EPart.pdf));
+					}
+
+					context.addResultItem(new ValidationResultItem(
+						ESeverity.error,
+						"XMP Metadata: DocumentFileName contains invalid value"
+					).setSection(19).setPart(EPart.pdf));
+				}
+				xpr = xpath.compile("//*[local-name()=\"Version\"]|//*[local-name()=\"Description\"]/@Version");
+				nodes = (NodeList) xpr.evaluate(docXMP, XPathConstants.NODESET);
+
+				// get all child nodes
+				// NodeList nodes = element.getChildNodes();
+				// expr.evaluate(docXMP, XPathConstants.NODESET);
+				// print the text content of each child
+				if (nodes.getLength() == 0) {
+					context.addResultItem(new ValidationResultItem(ESeverity.error, "XMP Metadata: Version not found")
+						.setSection(15).setPart(EPart.pdf));
+				}
+
+				boolean versionValid = false;
+				for (int i = 0; i < nodes.getLength(); i++) {
+					final String[] valueArray = {"1.0", "1p0", "2p0", "1.2", "2.0", "2.1", "2.2", "2.3", "3.0"}; //1.2, 2.0, 2.1, 2.2, 2.3 and 3.0 are for xrechnung 1.2, 2p0 can be ZF 2.0, 2.1, 2.1.1
+
+					if (stringArrayContains(valueArray, nodes.item(i).getTextContent())) {
+						versionValid = true;
+					} // e.g. 1.0
+				}
+				if (!versionValid) {
+					context.addResultItem(
+						new ValidationResultItem(ESeverity.error, "XMP Metadata: Version contains invalid value")
+							.setSection(16).setPart(EPart.pdf));
+
+				}
+			} catch (final SAXException e) {
 				context.addResultItem(
-					new ValidationResultItem(ESeverity.error, "XMP Metadata: Version contains invalid value")
-						.setSection(16).setPart(EPart.pdf));
-
+					new ValidationResultItem(ESeverity.error, "XMP Metadata: Could not parse XMP metadata (XML invalid)")
+						.setSection(28).setPart(EPart.pdf));
+			} catch (IOException | ParserConfigurationException | XPathExpressionException e) {
+				LOGGER.error(e.getMessage(), e);
 			}
-		} catch (final SAXException | IOException | ParserConfigurationException | XPathExpressionException e) {
-			LOGGER.error(e.getMessage(), e);
 		}
 		zfXML = zi.getUTF8();
 
@@ -272,8 +285,9 @@ public class PDFValidator extends Validator {
 		final byte[] pdfMachineSignature = "pdfMachine from Broadgun Software".getBytes(StandardCharsets.UTF_8);
 		final byte[] ghostscriptSignature = "%%Invocation:".getBytes(StandardCharsets.UTF_8);
 		final byte[] cibpdfbrewerSignature = "CIB pdf brewer".getBytes(StandardCharsets.UTF_8);
-		final byte[] lexofficeSignature = "lexoffice".getBytes(StandardCharsets.UTF_8);		
+		final byte[] lexofficeSignature = "lexoffice".getBytes(StandardCharsets.UTF_8);
 		final byte[] s2IndustriesSignature = "s2industries.ZUGFeRD.PDF".getBytes(StandardCharsets.UTF_8); // https://github.com/stephanstapel/ZUGFeRD-csharp
+		final byte[] factoorSharpSignature = "FactoorSharp".getBytes(StandardCharsets.UTF_8); // https://github.com/S2-Industries/FactoorSharp
 		final byte[] sevdeskSignature = "sevdesk".getBytes(StandardCharsets.UTF_8);
 
 		if (ByteArraySearcher.contains(fileContents, symtraxSignature)) {
@@ -296,6 +310,8 @@ public class PDFValidator extends Validator {
 			Signature = "Lexware office";
 		} else if (ByteArraySearcher.contains(fileContents, s2IndustriesSignature)) {
 			Signature = "ZUGFeRD.PDF-csharp";
+		} else if (ByteArraySearcher.contains(fileContents, factoorSharpSignature)) {
+			Signature = "FactoorSharp";
 		} else if (ByteArraySearcher.contains(fileContents, sevdeskSignature)) {
 			Signature = "sevdesk";
 		}
@@ -306,7 +322,7 @@ public class PDFValidator extends Validator {
 		final HashMap<String, byte[]> additionalData = zi.getAdditionalData();
 		for (final String filename : additionalData.keySet()) {
 			// validating xml in byte[]	additionalData.get(filename)
-			LOGGER.info("validating additionalData " + filename);
+			LOGGER.info("validating additionalData {}", filename);
 			validateSchema(additionalData.get(filename), "ad/basic/additional_data_base_schema.xsd", 2, EPart.pdf);
 		}
 
@@ -335,23 +351,23 @@ public class PDFValidator extends Validator {
 	@Override
 	public void setFilename(String filename) throws IrrecoverableValidationError {
 		this.pdfFilename = filename;
-		if(autoload) {
+		if (autoload) {
 			try {
-				fileContents=Files.readAllBytes(Paths.get(pdfFilename));
+				fileContents = Files.readAllBytes(Paths.get(pdfFilename));
 			} catch (IOException ex) {
 				throw new IrrecoverableValidationError("Could not read file");
 			}
 		}
 	}
 
-  public void setFileContents(byte[] fileContents) {
-    this.fileContents = fileContents;
-  }
+	public void setFileContents(byte[] fileContents) {
+		this.fileContents = fileContents;
+	}
 
-  public void setFilenameAndContents(String filename, byte[] fileContents) {
-    this.pdfFilename = filename;
-    this.fileContents = fileContents;
-  }
+	public void setFilenameAndContents(String filename, byte[] fileContents) {
+		this.pdfFilename = filename;
+		this.fileContents = fileContents;
+	}
 
 	public String getRawXML() {
 		return zfXML;

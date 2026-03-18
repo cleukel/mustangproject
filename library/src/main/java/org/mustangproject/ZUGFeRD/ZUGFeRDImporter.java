@@ -14,6 +14,7 @@ package org.mustangproject.ZUGFeRD;
  * @author jstaerk
  */
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -352,6 +353,16 @@ public class ZUGFeRDImporter extends ZUGFeRDInvoiceImporter {
 
 
 	public String getHolder() {
+		if (importedInvoice!=null && importedInvoice.getTradeSettlement()!=null) {
+			for (IZUGFeRDTradeSettlement settlement : importedInvoice.getTradeSettlement()) {
+				if (settlement instanceof IZUGFeRDTradeSettlementPayment) {
+					String s = ((IZUGFeRDTradeSettlementPayment) settlement).getAccountName();
+					if ( s != null ) {
+						return s;
+					}
+				}
+			}
+		}
 		return extractString("//*[local-name() = 'SellerTradeParty']/*[local-name() = 'Name']");
 	}
 
@@ -469,7 +480,7 @@ public class ZUGFeRDImporter extends ZUGFeRDInvoiceImporter {
 			return null;
 		}
 
-		return new String(rawXML);
+		return new String(rawXML, StandardCharsets.UTF_8);
 	}
 
 
@@ -669,6 +680,7 @@ public class ZUGFeRDImporter extends ZUGFeRDInvoiceImporter {
 			for (int i = 0; i < nl.getLength(); i++) {
 				final Node nn = nl.item(i);
 				Node node = null;
+				Node subnode = null;
 				if (nn.getLocalName() != null) {
 					switch (nn.getLocalName()) {
 						case "SpecifiedLineTradeAgreement":
@@ -727,6 +739,28 @@ public class ZUGFeRDImporter extends ZUGFeRDInvoiceImporter {
 						case "SpecifiedSupplyChainTradeDelivery":
 							node = getNodeByName(nn.getChildNodes(), "BilledQuantity");
 							lineItem.setQuantity(XMLTools.tryBigDecimal(node));
+
+							node = getNodeByName(nn.getChildNodes(), "DeliveryNoteReferencedDocument");
+							if (node != null) {
+								subnode = getNodeByName(node.getChildNodes(), "IssuerAssignedID");
+								if (subnode != null) {
+									lineItem.setDeliveryNoteReferencedDocumentID(XMLTools.getNodeValue(subnode));
+								}
+								subnode = getNodeByName(node.getChildNodes(), "LineID");
+								if (subnode != null) {
+									lineItem.setDeliveryNoteReferencedDocumentLineID(XMLTools.getNodeValue(subnode));
+								}
+								node = getNodeByName(node.getChildNodes(), "FormattedIssueDateTime");
+								if (node != null) {
+									NodeList FormattedIssueDateTimeChilds = node.getChildNodes();
+									for (int dateChildIndex = 0; dateChildIndex < FormattedIssueDateTimeChilds.getLength(); dateChildIndex++) {
+										if ((FormattedIssueDateTimeChilds.item(dateChildIndex).getLocalName() != null)
+											&& (FormattedIssueDateTimeChilds.item(dateChildIndex).getLocalName().equals("DateTimeString"))) {
+											lineItem.setDeliveryNoteReferencedDocumentDate(XMLTools.tryDate(FormattedIssueDateTimeChilds.item(dateChildIndex)));
+										}
+									}
+								}
+							}
 							break;
 
 						case "SpecifiedLineTradeSettlement":

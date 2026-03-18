@@ -102,10 +102,11 @@ public class XRTest extends TestCase {
 		BigDecimal amount = new BigDecimal(amountStr);
 		byte[] b = {12, 13};
 
-		FileAttachment fe1 = new FileAttachment("one.pdf", "application/pdf", "Alternative", b);
+		FileAttachment fe1 = new FileAttachment("one.pdf", "application/pdf", "Alternative", b,"Beschreibung");
 		Invoice i = new Invoice().setDueDate(new Date()).setIssueDate(new Date()).setDeliveryDate(new Date())
 			.setSender(new TradeParty(orgname, "teststr", "55232", "teststadt", "DE").setEmail("sender@example.com").addTaxID("DE4711").addVATID("DE0815").setContact(new Contact("Hans Test", "+49123456789", "test@example.org")).addBankDetails(new BankDetails("DE12500105170648489890", "COBADEFXXX").setAccountName("kontoInhaber")))
 			.setRecipient(new TradeParty("Franz Müller", "teststr.12", "55232", "Entenhausen", "DE").setEmail("recipient@sample.org"))
+			.setDeliveryAddress(new TradeParty("Franz Müller", "teststr.12", "55232", "Entenhausen", "DE").setEmail("recipient@sample.org"))
 			.addCashDiscount(new CashDiscount(new BigDecimal(2), 7))
 			.addCashDiscount(new CashDiscount(new BigDecimal(3), 14))
 			.setReferenceNumber("991-01484-64")//leitweg-id
@@ -157,7 +158,7 @@ public class XRTest extends TestCase {
 		assertEquals(attachedFiles.length, 1);
 
 		assertTrue(Arrays.equals(attachedFiles[0].getData(), b));
-
+		assertEquals("Beschreibung",attachedFiles[0].getDescription());
 
 	}
 
@@ -298,7 +299,7 @@ public class XRTest extends TestCase {
 		String number = "123";
 		String amountStr = "1.00";
 		BigDecimal amount = new BigDecimal(amountStr);
-		var i = new Invoice().setDueDate(new java.util.Date()).setIssueDate(new java.util.Date()).setDeliveryDate(new java.util.Date())
+		Invoice i = new Invoice().setDueDate(new java.util.Date()).setIssueDate(new java.util.Date()).setDeliveryDate(new java.util.Date())
 			.setSender(new TradeParty(orgname, "teststr", "55232", "teststadt", "DE").addTaxID("DE4711").addVATID("DE0815").setEmail("info@example.org").setContact(new org.mustangproject.Contact("Hans Test", "+49123456789", "test@example.org")).addBankDetails(new org.mustangproject.BankDetails("DE12500105170648489890", "COBADEFXXX")))
 			.setRecipient(recipient)
 			.setReferenceNumber("991-01484-64")//leitweg-id
@@ -310,9 +311,13 @@ public class XRTest extends TestCase {
 		zf2p.generateXML(i);
 		String theXML = new String(zf2p.getXML(), StandardCharsets.UTF_8);
 		// Untaxed services don't have the field RateApplicablePercent, since it would be always 0. An error is thrown on validation, if 0 is set.
-		assertThat(theXML).valueByXPath("count(//*[local-name()='RateApplicablePercent'])")
+		assertThat(theXML).valueByXPath("count(//*[local-name()='SpecifiedLineTradeSettlement']/*[local-name()='ApplicableTradeTax']/*[local-name()='RateApplicablePercent'])")
 			.asInt()
 			.isEqualTo(0);
+
+		assertThat(theXML).valueByXPath("count(//*[local-name()='ApplicableHeaderTradeSettlement']/*[local-name()='ApplicableTradeTax']/*[local-name()='RateApplicablePercent'])")
+			.asInt()
+			.isEqualTo(1);
 
 		//Exemption reason needs to be set if TaxCategoryCode == "O", reason should be at the product and in the ApplicableTradeTax
 		assertThat(theXML).valueByXPath("count(//*[local-name()='ExemptionReason'])")
