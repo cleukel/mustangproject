@@ -135,16 +135,4 @@ public class FileAttachment implements IReferencedDocument {
 	{
 		return null;
 	}
-
-	@Override
-	public String getXmlString() {
-		final String documentContent = new String(Base64.getEncoder().encodeToString(getData()));
-		return "<ram:AdditionalReferencedDocument>"
-			+ "<ram:IssuerAssignedID>" + getIssuerAssignedID() + "</ram:IssuerAssignedID>"
-			+ "<ram:TypeCode>" + XMLTools.encodeXML(getTypeCode()) + "</ram:TypeCode>"
-			+ "<ram:Name>" + getDescription() + "</ram:Name>"
-			+ "<ram:AttachmentBinaryObject mimeCode=\"" + getMimetype() + "\"\n"
-			+ "filename=\"" + getFilename() + "\">" + documentContent + "</ram:AttachmentBinaryObject>"
-			+ "</ram:AdditionalReferencedDocument>";
-	}
 }

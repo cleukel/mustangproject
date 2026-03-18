@@ -29,10 +29,4 @@ public interface IReferencedDocument {
 	 * @return date of the issue
 	 */
 	Date getFormattedIssueDateTime();
-
-	/***
-	 * XML representation of instance
-	 * @return
-	 */
-	String getXmlString();
 }

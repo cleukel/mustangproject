@@ -775,7 +775,6 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 			}
 		}
 
-		final List<VATAmount> vatAmounts = calc.getVATAmountList();
 		for (final VATAmount amount : vatAmounts) {
 			if (amount != null) {
 				final String amountCategoryCode = amount.getCategoryCode();

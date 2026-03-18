@@ -101,15 +101,6 @@ public class ReferencedDocument implements IReferencedDocument {
 		return formattedIssueDateTime;
 	}
 
-	@Override
-	public String getXmlString() {
-		return "<ram:AdditionalReferencedDocument>" +
-				"<ram:IssuerAssignedID>" + XMLTools.encodeXML(getIssuerAssignedID()) + "</ram:IssuerAssignedID>" +
-				"<ram:TypeCode>" + XMLTools.encodeXML(getTypeCode()) + "</ram:TypeCode>" +
-				"<ram:ReferenceTypeCode>" + XMLTools.encodeXML(getReferenceTypeCode()) + "</ram:ReferenceTypeCode>" +
-			"</ram:AdditionalReferencedDocument>";
-	}
-
 	public static ReferencedDocument fromNode(Node node) {
 		if (!node.hasChildNodes()) {
 			return null;
