@@ -116,7 +116,6 @@ public class Invoice implements IExportableTransaction {
 			return null;
 		}
 		return xmlEmbeddedFiles.toArray(new FileAttachment[0]);
-
 	}
 
 	/***

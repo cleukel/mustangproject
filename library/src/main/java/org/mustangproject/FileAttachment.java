@@ -1,11 +1,17 @@
 package org.mustangproject;
 
+import java.util.Base64;
+import java.util.Date;
+
+import org.mustangproject.ZUGFeRD.IReferencedDocument;
+import org.mustangproject.ZUGFeRD.model.TypeCodeConstants;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-public class FileAttachment {
+public class FileAttachment implements IReferencedDocument {
 
 	protected String filename;
 	protected String mimetype;
@@ -101,5 +107,38 @@ public class FileAttachment {
 	public FileAttachment setData(byte[] data) {
 		this.data = data;
 		return this;
+	}
+
+	@Override
+	public String getIssuerAssignedID() {
+		return getFilename();
+	}
+
+	@Override
+	public String getTypeCode() {
+		return TypeCodeConstants.REFERENCED_DOCUMENT;
+	}
+
+	@Override
+	public String getReferenceTypeCode() {
+		return "";
+	}
+
+	@Override
+	public Date getFormattedIssueDateTime()
+	{
+		return null;
+	}
+
+	@Override
+	public String getXmlString() {
+		final String documentContent = new String(Base64.getEncoder().encodeToString(getData()));
+		return "<ram:AdditionalReferencedDocument>"
+			+ "<ram:IssuerAssignedID>" + getIssuerAssignedID() + "</ram:IssuerAssignedID>"
+			+ "<ram:TypeCode>" + XMLTools.encodeXML(getTypeCode()) + "</ram:TypeCode>"
+			+ "<ram:Name>" + getDescription() + "</ram:Name>"
+			+ "<ram:AttachmentBinaryObject mimeCode=\"" + getMimetype() + "\"\n"
+			+ "filename=\"" + getFilename() + "\">" + documentContent + "</ram:AttachmentBinaryObject>"
+			+ "</ram:AdditionalReferencedDocument>";
 	}
 }

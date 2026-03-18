@@ -121,6 +121,10 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 
 	// @todo check if the two boolean args can be refactored
 
+	protected String getTradePartyAsXML(IZUGFeRDExportableTradeParty party, boolean isSender, boolean isShipToTradeParty) {
+		return getTradePartyAsXML(party, isSender, isShipToTradeParty, false);
+	}
+
 	/***
 	 * returns the UN/CEFACT CII XML for companies(tradeparties), which is actually
 	 * the same for ZF1 (v 2013b) and ZF2 (v 2016b)
@@ -129,7 +133,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 	 * @param isShipToTradeParty some attributes are allowed only for senders or recipients
 	 * @return CII XML
 	 */
-	protected String getTradePartyAsXML(IZUGFeRDExportableTradeParty party, boolean isSender, boolean isShipToTradeParty) {
+	protected String getTradePartyAsXML(IZUGFeRDExportableTradeParty party, boolean isSender, boolean isShipToTradeParty, boolean omitTaxRegistration) {
 		String xml = "";
 		// According EN16931 either GlobalID or seller assigned ID might be present for BuyerTradeParty
 		// and ShipToTradeParty, but not both. Prefer seller assigned ID for now.
@@ -225,7 +229,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 				+ "</ram:URIID></ram:URIUniversalCommunication>";
 		}
 
-		if ((party.getVATID() != null) && (!isShipToTradeParty)) {
+		if ((party.getVATID() != null) && (!isShipToTradeParty) && !omitTaxRegistration) {
 			xml += "<ram:SpecifiedTaxRegistration>"
 				+ "<ram:ID schemeID=\"VA\">" + XMLTools.encodeXML(party.getVATID())
 				+ "</ram:ID>"
@@ -591,19 +595,22 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 
 		}
 
+		final List<VATAmount> vatAmounts = calc.getVATAmountList();
+		final boolean hasTaxCategoryO = vatAmounts.stream().anyMatch(ax -> "O".equals(ax.getCategoryCode()));
+		final boolean isExtended = getProfile() == Profiles.getByName("EXTENDED");
 		xml += "<ram:ApplicableHeaderTradeAgreement>";
 		if (trans.getReferenceNumber() != null) {
 			xml += "<ram:BuyerReference>" + XMLTools.encodeXML(trans.getReferenceNumber()) + "</ram:BuyerReference>";
 
 		}
 		xml += "<ram:SellerTradeParty>"
-			+ getTradePartyAsXML(trans.getSender(), true, false)
+			+ getTradePartyAsXML(trans.getSender(), true, false, hasTaxCategoryO && !isExtended)
 			+ "</ram:SellerTradeParty>"
 			+ "<ram:BuyerTradeParty>";
 		// + "<ID>GE2020211</ID>"
 		// + "<GlobalID schemeID=\"0088\">4000001987658</GlobalID>"
 
-		xml += getTradePartyAsXML(trans.getRecipient(), false, false);
+		xml += getTradePartyAsXML(trans.getRecipient(), false, false, hasTaxCategoryO && !isExtended);
 		xml += "</ram:BuyerTradeParty>";
 
 		if (trans.getSellerOrderReferencedDocumentID() != null && !trans.getSellerOrderReferencedDocumentID().trim().isEmpty()) {
@@ -627,18 +634,11 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 
 		// Additional Documents of XRechnung (Rechnungsbegruendende Unterlagen - BG-24 XRechnung)
 		if (trans.getAdditionalReferencedDocuments() != null) {
-			for (final FileAttachment f : trans.getAdditionalReferencedDocuments()) {
-				final String documentContent = new String(Base64.getEncoder().encodeToString(f.getData()));
-				xml += "<ram:AdditionalReferencedDocument>"
-					+ "<ram:IssuerAssignedID>" + f.getFilename() + "</ram:IssuerAssignedID>"
-					+ "<ram:TypeCode>916</ram:TypeCode>"
-					+ "<ram:Name>" + f.getDescription() + "</ram:Name>"
-					+ "<ram:AttachmentBinaryObject mimeCode=\"" + f.getMimetype() + "\"\n"
-					+ "filename=\"" + f.getFilename() + "\">" + documentContent + "</ram:AttachmentBinaryObject>"
-					+ "</ram:AdditionalReferencedDocument>";
+			for (final IReferencedDocument currentReferencedDocument : trans.getAdditionalReferencedDocuments()) {
+				xml += currentReferencedDocument.getXmlString();
 			}
 		}
-
+		
 		if (trans.getSpecifiedProcuringProjectID() != null) {
 			xml += "<ram:SpecifiedProcuringProject>"
 				+ "<ram:ID>"
@@ -653,7 +653,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 
 		if (this.trans.getDeliveryAddress() != null) {
 			xml += "<ram:ShipToTradeParty>" +
-				getTradePartyAsXML(this.trans.getDeliveryAddress(), false, true) +
+				getTradePartyAsXML(this.trans.getDeliveryAddress(), false, true, hasTaxCategoryO && !isExtended) +
 				"</ram:ShipToTradeParty>";
 		}
 
@@ -721,33 +721,39 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 			hasDueDate = false;
 		}
 
-		final List<VATAmount> vatAmounts = calc.getVATAmountList();
+		//final List<VATAmount> vatAmounts = calc.getVATAmountList();
+		boolean skipTaxCategoryO = false;
+		if (!isExtended && vatAmounts.size() > 1 && hasTaxCategoryO) {
+			skipTaxCategoryO = true;
+		}
 		for (final VATAmount amount : vatAmounts)
 		{
 			if (amount != null) {
 				final String amountCategoryCode = amount.getCategoryCode();
-				final String amountDueDateTypeCode = amount.getDueDateTypeCode();
-				final boolean displayExemptionReason = CATEGORY_CODES_WITH_EXEMPTION_REASON.contains(amountCategoryCode);
-				if (getProfile() != Profiles.getByName("Minimum")) {
-					String exemptionReasonTextXML = "";
-					if ((displayExemptionReason) && (amount.getVatExemptionReasonText() != null)) {
-						exemptionReasonTextXML = "<ram:ExemptionReason>" + XMLTools.encodeXML(amount.getVatExemptionReasonText()) + "</ram:ExemptionReason>";
+				if (!skipTaxCategoryO || (skipTaxCategoryO && !amountCategoryCode.equals("O"))) {
+					final String amountDueDateTypeCode = amount.getDueDateTypeCode();
+					final boolean displayExemptionReason = CATEGORY_CODES_WITH_EXEMPTION_REASON.contains(amountCategoryCode);
+					if (getProfile() != Profiles.getByName("Minimum")) {
+						String exemptionReasonTextXML = "";
+						if ((displayExemptionReason) && (amount.getVatExemptionReasonText() != null)) {
+							exemptionReasonTextXML = "<ram:ExemptionReason>" + XMLTools.encodeXML(amount.getVatExemptionReasonText()) + "</ram:ExemptionReason>";
 
-					}
+						}
 
-					xml += "<ram:ApplicableTradeTax>"
-						+ "<ram:CalculatedAmount>" + currencyFormat(amount.getCalculated())
-						+ "</ram:CalculatedAmount>" //currencyID=\"EUR\"
-						+ "<ram:TypeCode>VAT</ram:TypeCode>"
-						+ exemptionReasonTextXML
-						+ "<ram:BasisAmount>" + currencyFormat(amount.getBasis()) + "</ram:BasisAmount>" // currencyID=\"EUR\"
-						+ "<ram:CategoryCode>" + amountCategoryCode + "</ram:CategoryCode>"
-						+ (amountDueDateTypeCode != null ? "<ram:DueDateTypeCode>" + amountDueDateTypeCode + "</ram:DueDateTypeCode>" : "");
-					if (!amountCategoryCode.equals(TaxCategoryCodeTypeConstants.UNTAXEDSERVICE)) {
-						xml += "<ram:RateApplicablePercent>"
-							+ vatFormat(amount.getApplicablePercent()) + "</ram:RateApplicablePercent>";
+						xml += "<ram:ApplicableTradeTax>"
+							+ "<ram:CalculatedAmount>" + currencyFormat(amount.getCalculated())
+							+ "</ram:CalculatedAmount>" //currencyID=\"EUR\"
+							+ "<ram:TypeCode>VAT</ram:TypeCode>"
+							+ exemptionReasonTextXML
+							+ "<ram:BasisAmount>" + currencyFormat(amount.getBasis()) + "</ram:BasisAmount>" // currencyID=\"EUR\"
+							+ "<ram:CategoryCode>" + amountCategoryCode + "</ram:CategoryCode>"
+							+ (amountDueDateTypeCode != null ? "<ram:DueDateTypeCode>" + amountDueDateTypeCode + "</ram:DueDateTypeCode>" : "");
+						if (!amountCategoryCode.equals(TaxCategoryCodeTypeConstants.UNTAXEDSERVICE)) {
+							xml += "<ram:RateApplicablePercent>"
+								+ vatFormat(amount.getApplicablePercent()) + "</ram:RateApplicablePercent>";
+						}
+						xml += "</ram:ApplicableTradeTax>";
 					}
-					xml += "</ram:ApplicableTradeTax>";
 				}
 			}
 		}

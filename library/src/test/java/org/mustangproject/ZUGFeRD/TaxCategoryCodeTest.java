@@ -57,7 +57,7 @@ public class TaxCategoryCodeTest extends ResourceCase {
 
             final String invoicePdfFile = String.format("%s/%s",testResourcePath,invoiceFileName);
             //final Path inputFilePath = Paths.get();
-            zugferdExporter.setProfile(Profiles.getByName("EXTENDED", 2));
+            zugferdExporter.setProfile(Profiles.getByName("EN16931", 2));
             zugferdExporter.load(invoicePdfFile);
             zugferdExporter.setProducer("UNIT TEST").setCreator("UNIT TEST");
             zugferdExporter.setTransaction(ci);
