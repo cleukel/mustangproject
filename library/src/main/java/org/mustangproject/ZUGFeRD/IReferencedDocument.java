@@ -32,6 +32,7 @@ public interface IReferencedDocument {
 
 	/***
 	 * XML representation of instance
+	 * #LEUMOD 2.18.1
 	 * @return
 	 */
 	String getXmlString();

@@ -119,13 +119,17 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 		return profile;
 	}
 
-	// @todo check if the two boolean args can be refactored
-
+	/***
+	 * #LEUMOD 2.18.1
+	 * @todo check if the two boolean args can be refactored
+	 */
 	protected String getTradePartyAsXML(IZUGFeRDExportableTradeParty party, boolean isSender, boolean isShipToTradeParty) {
 		return getTradePartyAsXML(party, isSender, isShipToTradeParty, false);
 	}
 
 	/***
+	 * #LEUMOD 2.18.1
+	 *
 	 * returns the UN/CEFACT CII XML for companies(tradeparties), which is actually
 	 * the same for ZF1 (v 2013b) and ZF2 (v 2016b)
 	 * @param party any sender, recipient, seller or legal party involved
@@ -228,7 +232,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 				XMLTools.encodeXML(party.getUriUniversalCommunicationID())
 				+ "</ram:URIID></ram:URIUniversalCommunication>";
 		}
-
+		// #LEUMOD 2.18.1
 		if ((party.getVATID() != null) && (!isShipToTradeParty) && !omitTaxRegistration) {
 			xml += "<ram:SpecifiedTaxRegistration>"
 				+ "<ram:ID schemeID=\"VA\">" + XMLTools.encodeXML(party.getVATID())
@@ -548,6 +552,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 					+ "<ram:SpecifiedLineTradeSettlement>"
 					+ "<ram:ApplicableTradeTax>"
 					+ "<ram:TypeCode>VAT</ram:TypeCode>";
+				// #LEUMOD 2.18.1
 				if (currentItem.getProduct().getTaxExemptionReason() != null && !currentItem.getProduct().getTaxExemptionReason().trim().isEmpty()) {
 					xml += "<ram:ExemptionReason>" + XMLTools.encodeXML(currentItem.getProduct().getTaxExemptionReason()) + "</ram:ExemptionReason>";
 				}
@@ -595,6 +600,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 
 		}
 
+		// #LEUMOD 2.18.1
 		final List<VATAmount> vatAmounts = calc.getVATAmountList();
 		final boolean hasTaxCategoryO = vatAmounts.stream().anyMatch(ax -> "O".equals(ax.getCategoryCode()));
 		final boolean isExtended = getProfile() == Profiles.getByName("EXTENDED");
@@ -603,6 +609,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 			xml += "<ram:BuyerReference>" + XMLTools.encodeXML(trans.getReferenceNumber()) + "</ram:BuyerReference>";
 
 		}
+		// #LEUMOD 2.18.1
 		xml += "<ram:SellerTradeParty>"
 			+ getTradePartyAsXML(trans.getSender(), true, false, hasTaxCategoryO && !isExtended)
 			+ "</ram:SellerTradeParty>"
@@ -610,6 +617,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 		// + "<ID>GE2020211</ID>"
 		// + "<GlobalID schemeID=\"0088\">4000001987658</GlobalID>"
 
+		// #LEUMOD 2.18.1
 		xml += getTradePartyAsXML(trans.getRecipient(), false, false, hasTaxCategoryO && !isExtended);
 		xml += "</ram:BuyerTradeParty>";
 
@@ -634,11 +642,12 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 
 		// Additional Documents of XRechnung (Rechnungsbegruendende Unterlagen - BG-24 XRechnung)
 		if (trans.getAdditionalReferencedDocuments() != null) {
+			// #LEUMOD 2.18.1
 			for (final IReferencedDocument currentReferencedDocument : trans.getAdditionalReferencedDocuments()) {
 				xml += currentReferencedDocument.getXmlString();
 			}
 		}
-		
+
 		if (trans.getSpecifiedProcuringProjectID() != null) {
 			xml += "<ram:SpecifiedProcuringProject>"
 				+ "<ram:ID>"
@@ -652,6 +661,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 		xml += "<ram:ApplicableHeaderTradeDelivery>";
 
 		if (this.trans.getDeliveryAddress() != null) {
+			// #LEUMOD 2.18.1
 			xml += "<ram:ShipToTradeParty>" +
 				getTradePartyAsXML(this.trans.getDeliveryAddress(), false, true, hasTaxCategoryO && !isExtended) +
 				"</ram:ShipToTradeParty>";
@@ -721,7 +731,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 			hasDueDate = false;
 		}
 
-		//final List<VATAmount> vatAmounts = calc.getVATAmountList();
+		// #LEUMOD 2.18.1
 		boolean skipTaxCategoryO = false;
 		if (!isExtended && vatAmounts.size() > 1 && hasTaxCategoryO) {
 			skipTaxCategoryO = true;
@@ -730,6 +740,7 @@ public class ZUGFeRD2PullProvider implements IXMLProvider {
 		{
 			if (amount != null) {
 				final String amountCategoryCode = amount.getCategoryCode();
+				// #LEUMOD 2.18.1
 				if (!skipTaxCategoryO || (skipTaxCategoryO && !amountCategoryCode.equals("O"))) {
 					final String amountDueDateTypeCode = amount.getDueDateTypeCode();
 					final boolean displayExemptionReason = CATEGORY_CODES_WITH_EXEMPTION_REASON.contains(amountCategoryCode);

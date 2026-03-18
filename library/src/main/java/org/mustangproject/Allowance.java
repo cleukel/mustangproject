@@ -39,7 +39,6 @@ public class Allowance extends Charge {
 			return totalAmount;
 		} else if (percent!=null) {
 			BigDecimal singlePrice=currentItem.getValue().multiply(BigDecimal.ONE.subtract(getPercent().divide(new BigDecimal(100))));
-//			BigDecimal singlePrice=currentItem.getValue().multiply(BigDecimal.ONE.subtract(getPercent().divide(new BigDecimal(100))));
 			BigDecimal singlePriceDiff=currentItem.getValue().subtract(singlePrice);
 			return singlePriceDiff;
 		} else {

@@ -165,6 +165,7 @@ public class Item implements IZUGFeRDExportableItem {
 			icnm.getAsNodeMap("ApplicableTradeTax")
 				.flatMap(cnm -> cnm.getAsString("ExemptionReason"))
 				.ifPresent(product::setTaxExemptionReason);
+			// #LEUMOD 2.18.1
 			icnm.getAsNodeMap("ApplicableTradeTax")
 					.flatMap(cnm -> cnm.getAsString("CategoryCode"))
 					.ifPresent(product::setTaxCategoryCode);

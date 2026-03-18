@@ -95,6 +95,9 @@ public class ReferencedDocument implements IReferencedDocument {
 		return formattedIssueDateTime;
 	}
 
+	/**
+	 * #LEUMOD 2.18.1
+	 */
 	@Override
 	public String getXmlString() {
 		return "<ram:AdditionalReferencedDocument>" +

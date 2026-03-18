@@ -9,6 +9,9 @@ import org.mustangproject.ZUGFeRD.model.TypeCodeConstants;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+/**
+ * #LEUMOD 2.18.1
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class FileAttachment implements IReferencedDocument {
@@ -109,6 +112,9 @@ public class FileAttachment implements IReferencedDocument {
 		return this;
 	}
 
+	/**
+	 * #LEUMOD 2.18.1
+	 */
 	@Override
 	public String getIssuerAssignedID() {
 		return getFilename();
